@@ -19,6 +19,7 @@ namespace GroupIP
     std::vector<mpz_class> calculate_factorials(int_t n);
     std::vector<mpz_class> calc_pascal(size_t);
     std::vector<mpq_class> calc_bernoulli(int_t n);
+    int_t uniform_random_number(int_t from, int_t to);
 }
 
 #endif // TOOLS_H_

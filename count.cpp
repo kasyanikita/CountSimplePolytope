@@ -23,29 +23,19 @@ int main(int argc, char *argv[])
     read_data(A, b, filepath);
 
     int dim = A[0].size();
-
-    auto hspace_adjacency = vertex_hspaces_adjacency(A, b);
-
-    for (auto cone_ids : hspace_adjacency)
-    {
-        if (cone_ids.size() != dim)
-        {
-            std::cerr << "The polytope isn't simple!\n";
-            std::exit(1);
-        }
-    }
+    auto cones = get_cones(A, b);
 
     std::vector<Matrix> A_cones;
     std::vector<Vector> b_cones;
 
-    for (auto cone_idxs : hspace_adjacency)
+    for (auto cone_idxs : cones)
     {
         Matrix A_cone;
         Vector b_cone;
         for (auto idx : cone_idxs)
         {
-            A_cone.push_back(A[idx - 1]);
-            b_cone.push_back(b[idx - 1]);
+            A_cone.push_back(A[idx]);
+            b_cone.push_back(b[idx]);
         }
         A_cones.push_back(A_cone);
         b_cones.push_back(b_cone);

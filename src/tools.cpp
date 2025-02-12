@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iomanip>
 #include <chrono>
+#include <random>
 
 namespace GroupIP
 {
@@ -70,5 +71,14 @@ namespace GroupIP
       res[i + 1] = res[i] * (n - i) / (i + 1);
     }
     return res;
+  }
+
+  int_t uniform_random_number(int_t from, int_t to)
+  {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(from, to);
+
+    return dis(gen);
   }
 }
