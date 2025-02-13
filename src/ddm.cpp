@@ -111,7 +111,7 @@ namespace GroupIP
         dd_set_global_constants();
         int num_rays = cone_rays.size();
         dd_MatrixPtr matrix = dd_CreateMatrix(num_rays + 1, dim + 2);
-        matrix->numbtype = dd_Integer;
+        matrix->numbtype = dd_Rational;
         matrix->representation = dd_Generator;
 
         mpq_class x;
@@ -160,7 +160,8 @@ namespace GroupIP
                     {
                         if (set_member(j, ray_set))
                         {
-                            simple_cone.push_back(j - 1);
+                            int idx = std::find(A.begin(), A.end(), cone_rays[j - 1]) - A.begin();
+                            simple_cone.push_back(idx);
                         }
                     }
                     simple_cones.push_back(simple_cone);
@@ -172,7 +173,7 @@ namespace GroupIP
                     {
                         if (set_member(j, ray_set))
                         {
-                            Acone.push_back(A[j - 1]);
+                            Acone.push_back(cone_rays[j - 1]);
                         }
                     }
                     triangulation(A, simple_cones, Acone, dim);
