@@ -2,6 +2,8 @@
 #define MATRIX_TOOLS_H_
 
 #include <flint/fmpz_mat.h>
+#include <cddlib/setoper.h>
+#include <cddlib/cdd.h>
 
 #include "global_defs.h"
 
@@ -15,6 +17,8 @@ namespace GroupIP
     int_t calculate_det(const GroupIP::Matrix &A);
     Matrix calculate_adjugate_matrix(const Matrix &A);
     Matrix transpose(const Matrix &A);
+    dd_MatrixPtr get_cdd_system(const Matrix& A, const Vector& b);
+    void hermite_normal_form(Matrix &A, Matrix &H, Matrix &U);
 }
 
 #endif // MATRIX_TOOLS_H_

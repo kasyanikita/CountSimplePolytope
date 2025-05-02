@@ -114,4 +114,80 @@ namespace GroupIP
 
         return matrix_transpose;
     }
+
+    Matrix fmpz_mat2matrix(fmpz_mat_t mat)
+    {
+        Matrix res_mat;
+        auto n_rows = fmpz_mat_nrows(mat);
+        auto n_cols = fmpz_mat_ncols(mat);
+
+        for (int i = 0; i < n_rows; ++i)
+        {
+            Vector row;
+            for (int j = 0; j < n_cols; ++j)
+            {
+                row.push_back(fmpz_get_si(fmpz_mat_entry(mat, i, j)));
+            }
+            res_mat.push_back(row);
+        }
+
+        return res_mat;
+    }
+
+    dd_MatrixPtr get_cdd_system(const Matrix& A, const Vector& b) {
+        dd_MatrixPtr dd_A;
+        dd_rowrange m;
+        dd_colrange d;
+        dd_ErrorType err;
+
+        dd_set_global_constants();
+
+        assert(A.size() > 0);
+
+        m = A.size();
+        d = A[0].size() + 1;
+        dd_A = dd_CreateMatrix(m, d);
+
+        for (int i = 0; i < m; ++i)
+        {
+            dd_set_si(dd_A->matrix[i][0], b[i].get_si());
+            for (int j = 1; j < d; ++j)
+            {
+                dd_set_si(dd_A->matrix[i][j], -A[i][j - 1].get_si());
+            }
+        }
+
+        return dd_A;
+    }
+
+    void hermite_normal_form(Matrix &A, Matrix &H, Matrix &U)
+    {
+        fmpz_mat_t A_fmpz;
+        fmpz_mat_t AT_fmpz;
+
+        fmpz_mat_t U_fmpz;
+
+        fmpz_mat_t H_fmpz;
+        fmpz_mat_t HT_fmpz;
+
+        fmpz_mat_init(A_fmpz, A.size(), A[0].size());
+        fmpz_mat_init(H_fmpz, A.size(), A[0].size());
+        fmpz_mat_init(AT_fmpz, A[0].size(), A.size());
+        fmpz_mat_init(HT_fmpz, A[0].size(), A.size());
+        fmpz_mat_init(U_fmpz, A[0].size(), A[0].size());
+
+        for (int i = 0; i < A.size(); i++)
+            for (int j = 0; j < A[0].size(); j++)
+                fmpz_set_si(fmpz_mat_entry(A_fmpz, i, j), A[i][j].get_si());
+
+        fmpz_mat_transpose(AT_fmpz, A_fmpz);
+
+        fmpz_mat_hnf_transform(HT_fmpz, U_fmpz, AT_fmpz);
+
+        fmpz_mat_transpose(H_fmpz, HT_fmpz);
+        fmpz_mat_transpose(U_fmpz, U_fmpz);
+
+        H = fmpz_mat2matrix(H_fmpz);
+        U = fmpz_mat2matrix(U_fmpz);
+    }
 }

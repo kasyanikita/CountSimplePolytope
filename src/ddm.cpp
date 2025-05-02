@@ -80,9 +80,132 @@ namespace GroupIP
         return hspaces_adjacency;
     }
 
-    std::vector<std::vector<int>> get_cones(const Matrix &A, const Vector &b)
+    void polytope_preprocessing(Matrix &A, Vector &b)
     {
+        dd_ErrorType err;
+        dd_MatrixPtr dd_A = get_cdd_system(A, b);
+
+        dd_rowset impl_lin, redset;
+        dd_rowindex newpos;
+        dd_MatrixCanonicalize(&dd_A, &impl_lin, &redset, &newpos, &err);
+
+        std::vector<int> linearity_row_idxs;
+        std::vector<int> inequality_row_idxs;
+        for (int i = 0; i < dd_A->rowsize; ++i)
+        {
+            if (set_member(i + 1, dd_A->linset))
+            {
+                linearity_row_idxs.push_back(i);
+                continue;
+            }
+            inequality_row_idxs.push_back(i);
+        }
+
+        if (linearity_row_idxs.size() == 0)
+        {
+            return;
+        }
+
+        Matrix E;
+        Vector Eb;
+        for (auto i : linearity_row_idxs)
+        {
+            Eb.push_back(*dd_A->matrix[i][0]);
+            Vector row;
+            for (int j = 1; j < dd_A->colsize; ++j)
+            {
+                row.push_back(-(*dd_A->matrix[i][j]));
+            }
+            E.push_back(row);
+        }
+
+        Matrix new_A;
+        Vector new_b;
+
+        for (auto i : inequality_row_idxs)
+        {
+            Vector row;
+            new_b.push_back(*dd_A->matrix[i][0]);
+            for (int j = 1; j < dd_A->colsize; ++j)
+            {
+                row.push_back(-(*dd_A->matrix[i][j]));
+            }
+            new_A.push_back(row);
+        }
+
+        Matrix H, U;
+        hermite_normal_form(E, H, U);
+
+        // solution in new variables
+        Vector new_vars_solution(H[0].size());
+        if (Eb[0] % H[0][0] != 0)
+        {
+            std::cout << "Num integer points: 0\n";
+            exit(1);
+        }
+
+        new_vars_solution[0] = Eb[0] / H[0][0];
+
+        for (int i = 1; i < H.size(); ++i)
+        {
+            for (int j = 0; j < i; ++j)
+            {
+                Eb[i] -= H[i][j] * new_vars_solution[j];
+            }
+
+            if (Eb[i] % H[i][i] != 0)
+            {
+                std::cout << "Num integer points: 0\n";
+                exit(1);
+            }
+
+            new_vars_solution[i] = Eb[i] / H[i][i];
+        }
+
+        Vector constant_terms(A[0].size(), 0);
+        int num_vars = E[0].size();
+        int num_new_vars = E[0].size() - E.size();
+        int start_new_var_idx = E.size();
+        Matrix new_AA(inequality_row_idxs.size(), Vector(num_new_vars, 0));
+        Vector new_bb(inequality_row_idxs.size(), 0);
+
+        for (int i = 0; i < num_vars; ++i)
+        {
+            for (int j = 0; j < E.size(); ++j)
+            {
+                constant_terms[i] += U[i][j] * new_vars_solution[j];
+            }
+        }
+
+        for (int m = 0; m < new_AA.size(); ++m)
+        {
+            for (int i = 0; i < num_new_vars; ++i)
+            {
+                for (int j = 0; j < num_vars; ++j)
+                {
+                    new_AA[m][i] += new_A[m][j] * U[j][i + start_new_var_idx];
+                }
+            }
+        }
+
+        for (int m = 0; m < new_A.size(); ++m)
+        {
+            new_bb[m] = new_b[m];
+            for (int i = 0; i < num_vars; ++i)
+            {
+                new_bb[m] -= new_A[m][i] * constant_terms[i];
+            }
+        }
+
+        A = new_AA;
+        b = new_bb;
+    }
+
+    std::vector<std::vector<int>> get_cones(Matrix &A, Vector &b)
+    {
+        polytope_preprocessing(A, b);
         int dim = A[0].size();
+
         std::vector<std::vector<int>> simple_cones;
         auto cones = vertex_hspaces_adjacency(A, b);
 
